@@ -1,0 +1,47 @@
+<idea-plugin>
+    <id>com.aimd.jetbrains</id>
+    <name>AI.md — Context Continuity</name>
+    <vendor email="support@ai-md.dev" url="https://github.com/ai-md">AI.md</vendor>
+
+    <description><![CDATA[
+    Save and restore AI project context across devices and platforms.
+    <br><br>
+    Captures your git state, open files, tech stack, and task notes into a portable
+    <code>.ai.md</code> file. Syncs via GitHub Gist, Google Drive, or local file.
+    Works with Claude, ChatGPT, Gemini, VS Code, and CLI.
+    <br><br>
+    <b>Features:</b>
+    <ul>
+      <li>One-click context save (Ctrl+Shift+S)</li>
+      <li>Auto-save on project close or focus loss</li>
+      <li>Git-aware: captures branch, recent commits, dirty files</li>
+      <li>Multi-cloud sync: GitHub Gist, Google Drive, local</li>
+      <li>Status bar widget showing sync state</li>
+    </ul>
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>Git4Idea</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <postStartupActivity implementation="com.aimd.AiMdStartup"/>
+        <statusBarWidgetFactory id="AiMdStatusBar"
+                                implementation="com.aimd.AiMdStatusBarFactory"
+                                order="after positionWidget"/>
+        <projectConfigurable displayName="AI.md"
+                             id="com.aimd.settings"
+                             instance="com.aimd.AiMdSettingsConfigurable"/>
+        <applicationService serviceImplementation="com.aimd.AiMdSettings"/>
+    </extensions>
+
+    <actions>
+        <action id="AiMd.SaveContext"
+                class="com.aimd.AiMdSaveAction"
+                text="AI.md: Save Context"
+                description="Save current project context to .ai.md file"
+                icon="/icons/aimd-16.svg">
+            <keyboard-shortcut first-keystroke="ctrl shift S" keymap="$default"/>
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+    </actions>
+</idea-plugin>

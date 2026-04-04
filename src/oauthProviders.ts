@@ -150,16 +150,29 @@ function getFreePort(): Promise<number> {
 //   → New Project → Enable Drive API → Credentials → Desktop App
 //   → copy the client_id and client_secret here.
 
-const GOOGLE_CLIENT_ID = process.env.AIMD_GOOGLE_CLIENT_ID ?? 'YOUR_GOOGLE_CLIENT_ID';
-const GOOGLE_CLIENT_SECRET = process.env.AIMD_GOOGLE_CLIENT_SECRET ?? 'YOUR_GOOGLE_CLIENT_SECRET';
+function googleCreds(): { id: string; secret: string } {
+  const envId = process.env.AIMD_GOOGLE_CLIENT_ID;
+  const envSecret = process.env.AIMD_GOOGLE_CLIENT_SECRET;
+  if (envId && envSecret) return { id: envId, secret: envSecret };
+  try {
+    const cfg = JSON.parse(fs.readFileSync(path.join(os.homedir(), '.aimd', 'config.json'), 'utf8'));
+    if (cfg.googleClientId && cfg.googleClientSecret) {
+      return { id: cfg.googleClientId, secret: cfg.googleClientSecret };
+    }
+  } catch { /* ignore */ }
+  throw new Error(
+    'Google Drive credentials not configured.\n' +
+    'Run `aimd setup` and choose Google Drive to configure credentials.'
+  );
+}
 const GOOGLE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
 
 async function googleRefreshToken(record: TokenRecord): Promise<TokenRecord> {
   if (Date.now() < record.expiresAt - 60_000) return record;
   if (!record.refreshToken) throw new Error('Google refresh token expired. Re-run `aimd setup`.');
   const body = new URLSearchParams({
-    client_id: GOOGLE_CLIENT_ID,
-    client_secret: GOOGLE_CLIENT_SECRET,
+    client_id: googleCreds().id,
+    client_secret: googleCreds().secret,
     refresh_token: record.refreshToken,
     grant_type: 'refresh_token',
   }).toString();
@@ -188,7 +201,7 @@ async function getGoogleToken(
   const authUrl =
     `https://accounts.google.com/o/oauth2/v2/auth?` +
     new URLSearchParams({
-      client_id: GOOGLE_CLIENT_ID,
+      client_id: googleCreds().id,
       redirect_uri: redirectUri,
       response_type: 'code',
       scope: GOOGLE_SCOPE,
@@ -222,8 +235,8 @@ async function getGoogleToken(
 
   const body = new URLSearchParams({
     code,
-    client_id: GOOGLE_CLIENT_ID,
-    client_secret: GOOGLE_CLIENT_SECRET,
+    client_id: googleCreds().id,
+    client_secret: googleCreds().secret,
     redirect_uri: redirectUri,
     grant_type: 'authorization_code',
   }).toString();

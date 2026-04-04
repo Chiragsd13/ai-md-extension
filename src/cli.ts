@@ -31,10 +31,14 @@ import {
 import {
   serialize, parse, generateResumePrompt,
   AIMdContext, AIMD_VERSION, newSessionId, deviceName,
+  projectFilenames, legacyFilename,
+  AIMdPreferences, serializePreferences, parsePreferences, defaultPreferences,
+  fmt,
 } from './aimdFormat';
 import {
   updateHabits, parseHabits, serializeHabits, HABITS_FILENAME,
 } from './habitsTracker';
+import { enrichWithAI } from './smartAnalysis';
 import {
   hasGoogleToken, hasMsToken, clearGoogleToken, clearMsToken,
 } from './oauthProviders';
@@ -76,9 +80,9 @@ const print = (s = '') => process.stdout.write(s + '\n');
 
 function banner() {
   print();
-  print(cyan(bold('  ╔═══════════════════════════════╗')));
-  print(cyan(bold('  ║   AI.md  ·  Context Continuity ║')));
-  print(cyan(bold('  ╚═══════════════════════════════╝')));
+  print(cyan(bold('  ╔════════════════════════════════╗')));
+  print(cyan(bold('  ║  AI.md  ·  Context Continuity  ║')));
+  print(cyan(bold('  ╚════════════════════════════════╝')));
   print();
 }
 
@@ -507,13 +511,47 @@ async function runSetup(forced = false): Promise<SyncConfig> {
   let cfg: SyncConfig;
 
   if (choice === '1') {
-    cfg = { provider: 'google-drive' };
     print('');
+    // Check for existing credentials in env vars or config
+    const envId = process.env.AIMD_GOOGLE_CLIENT_ID;
+    const envSecret = process.env.AIMD_GOOGLE_CLIENT_SECRET;
+    const existingCfg = loadConfig();
+
+    let clientId: string;
+    let clientSecret: string;
+
+    if (envId && envSecret) {
+      print(green('✔ Found Google credentials in environment variables.\n'));
+      clientId = envId;
+      clientSecret = envSecret;
+    } else if (existingCfg.googleClientId && existingCfg.googleClientSecret) {
+      print(green('✔ Found Google credentials in config.\n'));
+      clientId = existingCfg.googleClientId;
+      clientSecret = existingCfg.googleClientSecret;
+    } else {
+      print(bold('Google Drive requires OAuth credentials from Google Cloud Console:\n'));
+      print(dim('  1. Go to https://console.cloud.google.com'));
+      print(dim('  2. Create a project (or select existing)'));
+      print(dim('  3. APIs & Services → Enable "Google Drive API"'));
+      print(dim('  4. Credentials → Create Credentials → OAuth 2.0 Client ID'));
+      print(dim('  5. Application type: "Desktop app" → Create'));
+      print(dim('  6. Copy the Client ID and Client Secret below\n'));
+      clientId = (await ask('Google Client ID: ')).trim();
+      clientSecret = (await askSecret('Google Client Secret: ')).trim();
+      if (!clientId || !clientSecret) {
+        print(red('\nBoth Client ID and Client Secret are required.'));
+        print(dim('Re-run `aimd setup` when you have them.\n'));
+        return loadConfig();
+      }
+    }
+
+    cfg = { provider: 'google-drive', googleClientId: clientId, googleClientSecret: clientSecret };
+    saveConfig(cfg); // Save credentials before triggering OAuth
+
     print(dim('A browser window will open for Google sign-in.'));
     print(dim('AI.md only accesses its own private app folder — not your regular Drive files.\n'));
-    // Trigger auth eagerly
-    const provider = new GoogleDriveProvider({ onStatus: s => process.stdout.write(s) });
-    await provider.download('_auth_check.ai.md').catch(() => null); // triggers auth flow
+    const gdProvider = new GoogleDriveProvider({ onStatus: s => process.stdout.write(s) });
+    await gdProvider.download('_auth_check.ai.md').catch(() => null); // triggers auth flow
     print(green('✔ Google Drive connected.\n'));
 
   } else if (choice === '2') {
@@ -573,23 +611,42 @@ async function cmdAtAiMd(projectName: string | undefined, inject?: string): Prom
     cfg = await runSetup(true);
   }
 
-  const filename = projectFilename(projectName);
-  print(dim(`Retrieving "${filename}" from ${providerName(cfg)}…`));
+  const resolvedName = projectName ?? autoDetectProjectName() ?? path.basename(process.cwd());
+  const { technical: techFile, preferences: prefFile } = projectFilenames(resolvedName);
+  const legacy = legacyFilename(resolvedName);
 
   const provider = createProvider(cfg, { onStatus: s => process.stdout.write(s) });
-  const content = await provider.download(filename);
 
-  if (!content) {
-    print(yellow(`No context found for "${filename}".`));
+  // Try technical file first, fall back to legacy
+  print(dim(`Retrieving "${techFile}" from ${providerName(cfg)}…`));
+  let techContent = await provider.download(techFile);
+  if (!techContent) {
+    techContent = await provider.download(legacy);
+  }
+
+  if (!techContent) {
+    print(yellow(`No context found for "${resolvedName}".`));
     print(dim('Save context with `aimd save` or `Ctrl+Alt+S` in VS Code.\n'));
     return;
   }
 
-  const ctx = parse(content);
-  print(green(`✔ Context loaded: ${ctx.project ?? projectName} (${ctx.updated ?? 'unknown time'})`));
+  const ctx = parse(techContent);
+  print(green(`✔ Technical context loaded: ${ctx.project ?? resolvedName} (${ctx.updated ?? 'unknown time'})`));
+
+  // Also load preferences
+  const prefContent = await provider.download(prefFile).catch(() => null);
+  if (prefContent) {
+    print(green(`✔ Preferences loaded`));
+  }
   print('');
 
-  const resumePrompt = generateResumePrompt(content);
+  // Merge both into the resume prompt
+  let combined = techContent;
+  if (prefContent) {
+    combined += '\n\n---\n\n' + prefContent;
+  }
+
+  const resumePrompt = generateResumePrompt(combined);
   await injectIntoAi(resumePrompt, inject);
 }
 
@@ -597,46 +654,210 @@ async function cmdSave(projectName?: string): Promise<void> {
   let cfg = loadConfig();
   if (!isConfigured(cfg)) { print(yellow('Not configured.\n')); cfg = await runSetup(false); }
 
-  print(dim(`Capturing context for ${projectName ?? path.basename(process.cwd())}…`));
-  const ctx = captureCliContext(projectName);
+  // ── Auto-extract project name from git/package.json, or ask ────────────────
+  const autoName = autoDetectProjectName();
+  let resolvedName = projectName;
 
-  const taskInput = await ask(`What are you working on? (press Enter to skip)\n> `);
-  if (taskInput.trim()) ctx.task = taskInput.trim();
+  if (!resolvedName) {
+    const suggestion = autoName ?? path.basename(process.cwd());
+    const nameInput = await ask(`Project name? (Enter for ${bold(`"${suggestion}"`)}) > `);
+    resolvedName = nameInput.trim() || suggestion;
+  }
 
-  const content = serialize(ctx);
-  const filename = projectFilename(ctx.project);
+  print(dim(`Capturing context for ${resolvedName}…`));
+  let ctx = captureCliContext(resolvedName);
 
-  print(dim(`Saving to ${providerName(cfg)} as "${filename}"…`));
+  // ── Load existing context to preserve accumulated knowledge ────────────
+  const { technical: techFile, preferences: prefFile } = projectFilenames(ctx.project);
   const provider = createProvider(cfg, {
     onGistCreated: (id) => { cfg.gistId = id; saveConfig(cfg); },
     onStatus: s => process.stdout.write(s),
   });
-  await provider.upload(filename, content);
+
+  let prev: Partial<AIMdContext> = {};
+  try {
+    const existingTech = await provider.download(techFile);
+    if (existingTech) prev = parse(existingTech);
+  } catch { /* first save */ }
+
+  // ── Task ────────────────────────────────────────────────────────────────
+  if (prev.task) print(dim(`  Previous task: "${prev.task}"`));
+  const taskInput = await ask(`What are you working on?${prev.task ? ' (Enter to keep)' : ' (Enter for AI to infer)'}\n> `);
+  if (taskInput.trim()) {
+    ctx.task = taskInput.trim();
+  } else if (prev.task) {
+    ctx.task = prev.task;
+  } else {
+    const hasKey = !!(process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY);
+    if (hasKey) {
+      process.stdout.write(dim('  Analyzing context with AI…'));
+      ctx = await enrichWithAI(ctx);
+      if (ctx.aiGeneratedTask) {
+        process.stdout.write(green(' ✔\n'));
+        print(dim(`  Task: "${ctx.aiGeneratedTask}"`));
+      } else {
+        process.stdout.write(dim(' (no key or failed, skipped)\n'));
+      }
+    }
+  }
+
+  // ── Context Notes ──────────────────────────────────────────────────────
+  if (prev.notes) print(dim(`  Previous notes: ${prev.notes.length > 100 ? prev.notes.slice(0, 100) + '…' : prev.notes}`));
+  const notesInput = await ask(`Key decisions / context notes?${prev.notes ? ' (Enter to keep)' : ' (Enter to skip)'}\n> `);
+  ctx.notes = notesInput.trim() || prev.notes || '';
+
+  // ── Next Steps ─────────────────────────────────────────────────────────
+  if (prev.nextSteps?.length) {
+    print(dim('  Previous next steps:'));
+    prev.nextSteps.forEach((s, i) => print(dim(`    ${i + 1}. ${s}`)));
+  }
+  print(dim('  Next steps (one per line, empty line to finish):'));
+  const steps: string[] = [];
+  let stepInput = await ask('  > ');
+  while (stepInput.trim()) {
+    steps.push(stepInput.trim());
+    stepInput = await ask('  > ');
+  }
+  ctx.nextSteps = steps.length > 0 ? steps : (prev.nextSteps ?? []);
+
+  // ── Captured Prompts ───────────────────────────────────────────────────
+  if (prev.capturedPrompts?.length) {
+    print(dim(`  ${prev.capturedPrompts.length} prompt(s) carried from previous sessions`));
+  }
+  print(dim('  Key prompts / decisions to remember (one per line, empty to finish):'));
+  const newPrompts: string[] = [];
+  let promptInput = await ask('  > ');
+  while (promptInput.trim()) {
+    newPrompts.push(promptInput.trim());
+    promptInput = await ask('  > ');
+  }
+  if (newPrompts.length || prev.capturedPrompts?.length) {
+    ctx.capturedPrompts = [...(prev.capturedPrompts ?? []), ...newPrompts].slice(-15);
+    ctx.conversationPlatform = 'CLI';
+    ctx.conversationCapturedAt = new Date().toISOString();
+  }
+
+  // ── Preserve AI enrichment from previous save ──────────────────────────
+  if (!ctx.aiContextPoints?.length && prev.aiContextPoints?.length) ctx.aiContextPoints = prev.aiContextPoints;
+  if (!ctx.aiNextSteps?.length && prev.aiNextSteps?.length) ctx.aiNextSteps = prev.aiNextSteps;
+
+  // ── Save BOTH files: technical + preferences ────────────────────────────────
+  const techContent = serialize(ctx);
+
+  // 1. Technical file — always saved
+  print(dim(`Saving technical context → "${techFile}"…`));
+  await provider.upload(techFile, techContent);
+
+  // 2. Preferences file — create if missing, preserve if exists
+  let existingPrefs: string | null = null;
+  try { existingPrefs = await provider.download(prefFile); } catch { /* first time */ }
+
+  if (!existingPrefs) {
+    print(dim(`Creating preferences file → "${prefFile}"…`));
+    const prefs = defaultPreferences(ctx.project);
+    // Auto-populate from tech stack
+    if (ctx.techStack?.length)  prefs.preferredLanguages = ctx.techStack;
+    prefs.customRules = [
+      'Never change version numbers without asking first',
+    ];
+    await provider.upload(prefFile, serializePreferences(prefs));
+    print(dim('  (edit your preferences file to customize AI response style)'));
+  } else {
+    // Preferences exists — update the timestamp but don't overwrite user edits
+    const parsed = parsePreferences(existingPrefs);
+    if (parsed.project) {
+      const updated = existingPrefs.replace(
+        /> \*\*Updated:\*\*.+/,
+        `> **Updated:** ${fmt(new Date().toISOString())}  |  **AI.md Version:** ${AIMD_VERSION}`
+      );
+      await provider.upload(prefFile, updated);
+    }
+  }
+
+  // 3. Also save legacy single file for backwards compatibility
+  const legacyFile = legacyFilename(ctx.project);
+  await provider.upload(legacyFile, techContent);
 
   // Update habits (best-effort)
   updateAndSaveHabits(cfg, ctx).catch(() => {});
 
-  print(green(`✔ Saved: ${filename}`));
+  print(green(`✔ Saved: ${techFile} + ${prefFile}`));
   print('');
+}
+
+// ── Auto-detect project name from multiple sources ────────────────────────────
+
+function autoDetectProjectName(): string | null {
+  const cwd = process.cwd();
+
+  // 1. package.json name
+  try {
+    const pkg = JSON.parse(fs.readFileSync(path.join(cwd, 'package.json'), 'utf8'));
+    if (pkg.name && typeof pkg.name === 'string') return pkg.name;
+  } catch { /* no package.json */ }
+
+  // 2. Cargo.toml name
+  try {
+    const cargo = fs.readFileSync(path.join(cwd, 'Cargo.toml'), 'utf8');
+    const m = cargo.match(/^name\s*=\s*["'](.+?)["']/m);
+    if (m) return m[1];
+  } catch { /* no Cargo.toml */ }
+
+  // 3. pyproject.toml name
+  try {
+    const py = fs.readFileSync(path.join(cwd, 'pyproject.toml'), 'utf8');
+    const m = py.match(/^name\s*=\s*["'](.+?)["']/m);
+    if (m) return m[1];
+  } catch { /* no pyproject.toml */ }
+
+  // 4. go.mod module name
+  try {
+    const gomod = fs.readFileSync(path.join(cwd, 'go.mod'), 'utf8');
+    const m = gomod.match(/^module (.+)$/m);
+    if (m) return m[1].split('/').pop() ?? null;
+  } catch { /* no go.mod */ }
+
+  // 5. Git remote repo name
+  const remote = gitExec('git remote get-url origin', cwd);
+  if (remote) {
+    const m = remote.match(/\/([^/]+?)(?:\.git)?$/);
+    if (m) return m[1];
+  }
+
+  // 6. .git directory name (repo root)
+  const gitRoot = gitExec('git rev-parse --show-toplevel', cwd);
+  if (gitRoot) return path.basename(gitRoot);
+
+  // 7. Fall back to directory name
+  return path.basename(cwd);
 }
 
 async function cmdLoad(projectName?: string): Promise<void> {
   let cfg = loadConfig();
   if (!isConfigured(cfg)) { print(yellow('Not configured.\n')); cfg = await runSetup(false); }
 
-  const filename = projectFilename(projectName);
-  print(dim(`Loading "${filename}"…`));
-  const provider = createProvider(cfg, { onStatus: s => process.stdout.write(s) });
-  const content = await provider.download(filename);
+  const resolvedName = projectName ?? autoDetectProjectName() ?? path.basename(process.cwd());
+  const { technical: techFile, preferences: prefFile } = projectFilenames(resolvedName);
+  const legacy = legacyFilename(resolvedName);
 
-  if (!content) {
-    print(yellow(`No context found for "${filename}".\n`));
+  const provider = createProvider(cfg, { onStatus: s => process.stdout.write(s) });
+
+  // Try loading technical file first, fall back to legacy single file
+  print(dim(`Loading "${techFile}"…`));
+  let techContent = await provider.download(techFile);
+  if (!techContent) {
+    print(dim(`  Not found, trying legacy "${legacy}"…`));
+    techContent = await provider.download(legacy);
+  }
+
+  if (!techContent) {
+    print(yellow(`No context found for "${resolvedName}".\n`));
     return;
   }
 
-  const ctx = parse(content);
+  const ctx = parse(techContent);
   print('');
-  print(bold(`═══ ${ctx.project ?? projectName ?? 'Project'} ═══`));
+  print(bold(`═══ ${ctx.project ?? resolvedName} ═══`));
   print(`Platform: ${ctx.platform}  |  Device: ${ctx.device}  |  Updated: ${ctx.updated}`);
   if (ctx.task)       { print(''); print(bold('Task:')); print('  ' + ctx.task); }
   if (ctx.notes)      { print(''); print(bold('Notes:')); print('  ' + ctx.notes); }
@@ -645,11 +866,32 @@ async function cmdLoad(projectName?: string): Promise<void> {
     ctx.nextSteps.forEach((s, i) => print(`  ${i + 1}. ${s}`));
   }
   if (ctx.gitBranch)  { print(''); print(`Branch: ${ctx.gitBranch}`); }
+
+  // Also load preferences
+  const prefContent = await provider.download(prefFile).catch(() => null);
+  if (prefContent) {
+    const prefs = parsePreferences(prefContent);
+    print('');
+    print(bold('── Preferences ──'));
+    if (prefs.responseStyle)    print(`  Style: ${prefs.responseStyle}`);
+    if (prefs.preferredTone)    print(`  Tone: ${prefs.preferredTone}`);
+    if (prefs.experienceLevel)  print(`  Level: ${prefs.experienceLevel}`);
+    if (prefs.customRules?.length) {
+      print('  Rules:');
+      prefs.customRules.forEach(r => print(`    • ${r}`));
+    }
+  }
+
   print('');
 
   const ans = await ask('Inject into AI? (y/N) ');
   if (ans.toLowerCase() === 'y') {
-    const resumePrompt = generateResumePrompt(content);
+    // Merge both files into the resume prompt
+    let combined = techContent;
+    if (prefContent) {
+      combined += '\n\n---\n\n' + prefContent;
+    }
+    const resumePrompt = generateResumePrompt(combined);
     await injectIntoAi(resumePrompt);
   }
 }
@@ -672,12 +914,103 @@ async function cmdList(): Promise<void> {
   const provider = createProvider(cfg, { onStatus: () => {} });
   const files = await (provider.listFiles?.() ?? Promise.resolve([]));
   if (!files.length) { print(dim('No contexts saved yet.\n')); return; }
+
+  // Group by project name
+  const projects = new Map<string, string[]>();
   files.forEach(f => {
-    const name = f.replace('.ai.md', '').replace(/^ai$/, '(default)');
-    print(`  ${green('●')} ${bold(name)}  ${dim(f)}`);
+    let proj: string;
+    if (f.includes('.technical.ai.md')) proj = f.replace('.technical.ai.md', '');
+    else if (f.includes('.preferences.ai.md')) proj = f.replace('.preferences.ai.md', '');
+    else proj = f.replace('.ai.md', '');
+    if (proj === 'ai' || proj === '') proj = '(default)';
+
+    if (!projects.has(proj)) projects.set(proj, []);
+    projects.get(proj)!.push(f);
   });
+
+  projects.forEach((fileList, proj) => {
+    const isTech = fileList.some(f => f.includes('.technical.'));
+    const isPref = fileList.some(f => f.includes('.preferences.'));
+    const isLegacy = fileList.some(f => !f.includes('.technical.') && !f.includes('.preferences.'));
+
+    const badges: string[] = [];
+    if (isTech)   badges.push(cyan('tech'));
+    if (isPref)   badges.push(yellow('prefs'));
+    if (isLegacy && !isTech) badges.push(dim('legacy'));
+
+    print(`  ${green('●')} ${bold(proj)}  ${badges.join(' + ')}  ${dim(fileList.join(', '))}`);
+  });
+
   print('');
   print(dim('Run `aimd @ai.md <project>` to load and inject context into your AI session.'));
+  print('');
+}
+
+async function cmdPrefs(projectName?: string): Promise<void> {
+  let cfg = loadConfig();
+  if (!isConfigured(cfg)) { print(yellow('Not configured.\n')); cfg = await runSetup(false); }
+
+  const resolvedName = projectName ?? autoDetectProjectName() ?? path.basename(process.cwd());
+  const prefFile = projectFilenames(resolvedName).preferences;
+  const provider = createProvider(cfg, {
+    onGistCreated: (id) => { cfg.gistId = id; saveConfig(cfg); },
+    onStatus: s => process.stdout.write(s),
+  });
+
+  // Load existing or create default
+  let existing = await provider.download(prefFile).catch(() => null);
+  let prefs: AIMdPreferences;
+
+  if (existing) {
+    const parsed = parsePreferences(existing);
+    prefs = { ...defaultPreferences(resolvedName), ...parsed } as AIMdPreferences;
+    print(bold(`Editing preferences for "${resolvedName}"\n`));
+  } else {
+    prefs = defaultPreferences(resolvedName);
+    print(bold(`Creating preferences for "${resolvedName}"\n`));
+  }
+
+  // Interactive questionnaire
+  print(dim('Press Enter to keep current value.\n'));
+
+  const styleInput = await ask(`Response style [${prefs.responseStyle}]: `);
+  if (styleInput.trim()) prefs.responseStyle = styleInput.trim();
+
+  const toneInput = await ask(`Preferred tone [${prefs.preferredTone}]: `);
+  if (toneInput.trim()) prefs.preferredTone = toneInput.trim();
+
+  const codeInput = await ask(`Code style [${prefs.codeStyle}]: `);
+  if (codeInput.trim()) prefs.codeStyle = codeInput.trim();
+
+  const depthInput = await ask(`Explanation depth [${prefs.explanationDepth}]: `);
+  if (depthInput.trim()) prefs.explanationDepth = depthInput.trim();
+
+  const levelInput = await ask(`Experience level [${prefs.experienceLevel}]: `);
+  if (levelInput.trim()) prefs.experienceLevel = levelInput.trim();
+
+  // Rules
+  print('');
+  print(bold('Custom rules') + dim(' (one per line, empty line to finish):'));
+  if (prefs.customRules?.length) {
+    print(dim(`  Current: ${prefs.customRules.join('; ')}`));
+  }
+  const keepRules = await ask('Keep existing rules? (Y/n) ');
+  if (keepRules.toLowerCase() === 'n') prefs.customRules = [];
+
+  let ruleInput = await ask('Add rule: ');
+  while (ruleInput.trim()) {
+    prefs.customRules = prefs.customRules ?? [];
+    prefs.customRules.push(ruleInput.trim());
+    ruleInput = await ask('Add rule: ');
+  }
+
+  prefs.updated = new Date().toISOString();
+
+  const content = serializePreferences(prefs);
+  print(dim(`\nSaving → "${prefFile}"…`));
+  await provider.upload(prefFile, content);
+
+  print(green(`✔ Preferences saved: ${prefFile}`));
   print('');
 }
 
@@ -752,6 +1085,7 @@ function printHelp(): void {
   print(`  ${cyan('load')} [project]                Download, display, then optionally inject`);
   print(`  ${cyan('prompt')} [project]              Copy resume prompt to clipboard`);
   print(`  ${cyan('list')}                          List all saved contexts`);
+  print(`  ${cyan('prefs')} [project]               Edit AI response preferences`);
   print(`  ${cyan('habits')}                        Show auto-learned habits profile`);
   print(`  ${cyan('setup')}                         Configure sync provider (interactive)`);
   print(`  ${cyan('config')} [set <key> <val>]      Show / edit config`);
@@ -808,6 +1142,10 @@ async function main(): Promise<void> {
         break;
       case 'list':
         await cmdList();
+        break;
+      case 'prefs':
+      case 'preferences':
+        await cmdPrefs(rest[0]);
         break;
       case 'habits':
         await cmdHabits();

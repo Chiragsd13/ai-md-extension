@@ -167,6 +167,82 @@
     .btn-sec:active { background: #242424; }
     .btn-sec:disabled { opacity: 0.35; cursor: not-allowed; }
 
+    /* Save Chat button — full-width, distinct from secondary */
+    .btn-save-chat {
+      width: 100%;
+      background: #0f1a2a;
+      color: #5b9bd5;
+      border: 1px solid #1a3050;
+      border-radius: 7px;
+      padding: 8px 14px;
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      letter-spacing: 0.2px;
+      transition: all 0.12s;
+    }
+    .btn-save-chat:hover  { background: #132040; border-color: #2a5080; color: #7ab4e8; }
+    .btn-save-chat:active { background: #0a1525; }
+    .btn-save-chat:disabled { opacity: 0.35; cursor: not-allowed; }
+    .save-chat-row {
+      padding: 0 15px 10px;
+      border-bottom: 1px solid #181818;
+    }
+
+    /* AI Update button — gradient purple/blue */
+    .btn-ai-update {
+      width: 100%;
+      background: linear-gradient(135deg, #1a102a 0%, #0f1a2a 100%);
+      color: #b090e0;
+      border: 1px solid #2a1850;
+      border-radius: 7px;
+      padding: 8px 14px;
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      letter-spacing: 0.2px;
+      transition: all 0.12s;
+    }
+    .btn-ai-update:hover  { background: linear-gradient(135deg, #241640 0%, #152040 100%); border-color: #3a2870; color: #c8a8f0; }
+    .btn-ai-update:active { background: #100a1a; }
+    .btn-ai-update:disabled { opacity: 0.35; cursor: not-allowed; }
+    .ai-update-row {
+      padding: 0 15px 10px;
+      border-bottom: 1px solid #181818;
+    }
+
+    /* Tracking status mini-bar */
+    .tracking-bar {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 15px 6px;
+      font-size: 10px;
+      color: #3a3a3a;
+      border-bottom: 1px solid #181818;
+    }
+    .tracking-bar .tdot {
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      background: #222;
+      animation: pulse 3s infinite;
+    }
+    .tracking-bar.active .tdot { background: #5a9; }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 1; }
+    }
+
     /* ─── File list ───────────────────────────────────────────────── */
     .files-section {
       border-bottom: 1px solid #181818;
@@ -283,6 +359,28 @@
     <button class="btn-sec" id="optionsBtn" title="Open settings">
       <span>⚙</span> Settings
     </button>
+  </div>
+
+  <!-- Save Chat button -->
+  <div class="save-chat-row">
+    <button class="btn-save-chat" id="btnSaveChat" disabled title="Save your recent chat prompts to AI.md context">
+      <span>💬</span>
+      <span id="btnSaveChatLabel">Save Chat to Context</span>
+    </button>
+  </div>
+
+  <!-- AI Update button -->
+  <div class="ai-update-row">
+    <button class="btn-ai-update" id="btnAiUpdate" disabled title="Ask the AI to write a context summary for you">
+      <span>🤖</span>
+      <span id="btnAiUpdateLabel">Update Context via AI</span>
+    </button>
+  </div>
+
+  <!-- Smart tracking status -->
+  <div class="tracking-bar" id="trackingBar">
+    <span class="tdot"></span>
+    <span id="trackingText">Smart tracking inactive</span>
   </div>
 
   <!-- Saved files -->

@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "AI.md — AI Context Continuity",
   "version": "1.0.0",
-  "description": "Save and restore AI project context across devices and platforms. Works with Claude, ChatGPT, Gemini, and more.",
+  "description": "Save and restore AI project context across devices and platforms. Smart auto-tracking, multi-cloud sync, works with Claude, ChatGPT, Gemini.",
 
   "permissions": [
     "storage",
@@ -12,7 +12,8 @@
     "tabs",
     "activeTab",
     "scripting",
-    "notifications"
+    "notifications",
+    "identity"
   ],
 
   "host_permissions": [
@@ -21,8 +22,16 @@
     "https://chatgpt.com/*",
     "https://gemini.google.com/*",
     "https://aistudio.google.com/*",
-    "https://api.github.com/*"
+    "https://api.github.com/*",
+    "https://www.googleapis.com/*"
   ],
+
+  "oauth2": {
+    "client_id": "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com",
+    "scopes": [
+      "https://www.googleapis.com/auth/drive.file"
+    ]
+  },
 
   "background": {
     "service_worker": "background.js"

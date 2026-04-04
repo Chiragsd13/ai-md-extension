@@ -33,9 +33,11 @@ export interface SyncConfig {
   // GitHub Gist
   githubToken?: string;
   gistId?: string;
+  // Google Drive (OAuth credentials — tokens stored separately in tokens.json)
+  googleClientId?: string;
+  googleClientSecret?: string;
   // Webhook
   webhookUrl?: string;
-  // Google / OneDrive tokens are stored separately in ~/.aimd/tokens.json
 }
 
 export function defaultConfig(): SyncConfig {

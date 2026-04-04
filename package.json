@@ -12,6 +12,11 @@
     "vscode": "^1.90.0",
     "node": ">=18.0.0"
   },
+  "icon": "resources/icon.png",
+  "galleryBanner": {
+    "color": "#0d1117",
+    "theme": "dark"
+  },
   "categories": ["Other", "Machine Learning", "AI"],
   "keywords": ["ai", "context", "continuity", "claude", "chatgpt", "copilot", "sync", "workflow", "habits"],
 

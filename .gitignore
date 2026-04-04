@@ -7,8 +7,8 @@ Thumbs.db
 # Keep the packaged VSIX for sideloading
 !aimd-*.vsix
 
-# Local Claude Code settings (personal overrides)
-.claude/settings.local.json
+# Claude Code working files
+.claude/
 
 # OAuth tokens (stored in ~/.aimd/ — never in the repo)
 *.aimd-tokens.json

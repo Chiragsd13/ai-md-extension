@@ -1,6 +1,226 @@
 import * as os from 'os';
 
-export const AIMD_VERSION = '1.1';
+export const AIMD_VERSION = '1.2';
+
+// ─── File types ──────────────────────────────────────────────────────────────
+// Each project stores two files:
+//   {project}.technical.ai.md  — code state, git, files, tech stack, errors
+//   {project}.preferences.ai.md — response style, tone, format, constraints
+
+export type AIMdFileType = 'technical' | 'preferences';
+
+export function projectFilenames(project: string): { technical: string; preferences: string } {
+  const base = project || 'ai';
+  return {
+    technical:   `${base}.technical.ai.md`,
+    preferences: `${base}.preferences.ai.md`,
+  };
+}
+
+// The legacy single-file name — still supported for backwards compat
+export function legacyFilename(project: string): string {
+  const base = project || 'ai';
+  return base.endsWith('.ai.md') ? base : `${base}.ai.md`;
+}
+
+// ─── Preferences context (the "general" file) ────────────────────────────────
+
+export interface AIMdPreferences {
+  version: string;
+  project: string;
+  updated: string;
+
+  // Response style
+  responseStyle?: string;          // "concise" | "detailed" | "step-by-step" | custom
+  preferredTone?: string;          // "professional" | "casual" | "technical" | custom
+  codeStyle?: string;              // "commented" | "minimal" | "documented" | custom
+  explanationDepth?: string;       // "brief" | "thorough" | "ELI5" | custom
+
+  // Format preferences
+  preferMarkdown?: boolean;        // prefers markdown formatting
+  preferCodeBlocks?: boolean;      // prefers code blocks vs inline
+  preferBulletPoints?: boolean;    // prefers lists vs paragraphs
+  preferNumberedSteps?: boolean;   // prefers numbered steps for procedures
+
+  // Communication style
+  askBeforeActing?: boolean;       // prefers AI asks vs acts
+  showReasoningFirst?: boolean;    // prefers seeing reasoning before answer
+  avoidApologies?: boolean;        // "don't apologize, just do it"
+  directAnswers?: boolean;         // "skip the preamble"
+
+  // Domain knowledge level
+  experienceLevel?: string;        // "beginner" | "intermediate" | "expert"
+  domainExpertise?: string[];      // areas of expertise
+
+  // Constraints / rules
+  customRules?: string[];          // "never change version numbers", "always use TypeScript", etc.
+  avoidPatterns?: string[];        // "don't use classes", "avoid ternaries", etc.
+  preferPatterns?: string[];       // "use functional style", "prefer const", etc.
+
+  // Learned over time (auto-populated from habits tracker)
+  commonTopics?: string[];         // what user frequently asks about
+  preferredLanguages?: string[];   // programming languages used most
+  typicalProjectTypes?: string[];  // "web app", "CLI tool", "library", etc.
+
+  // Free-form notes
+  notes?: string;
+}
+
+export function serializePreferences(prefs: AIMdPreferences): string {
+  const lines: string[] = [];
+
+  lines.push(`# AI Preferences — ${prefs.project}`);
+  lines.push('');
+  lines.push(`> **Updated:** ${fmt(prefs.updated)}  |  **AI.md Version:** ${prefs.version}`);
+  lines.push('');
+  lines.push('*This file tells AI assistants HOW you want them to respond. The companion*');
+  lines.push('*technical file tells them WHAT you\'re working on.*');
+  lines.push('');
+  lines.push('---');
+  lines.push('');
+
+  // Response Style
+  lines.push('## Response Style');
+  lines.push('');
+  const styleRows: [string, string][] = [];
+  if (prefs.responseStyle)     styleRows.push(['Style', prefs.responseStyle]);
+  if (prefs.preferredTone)     styleRows.push(['Tone', prefs.preferredTone]);
+  if (prefs.codeStyle)         styleRows.push(['Code Style', prefs.codeStyle]);
+  if (prefs.explanationDepth)  styleRows.push(['Explanation Depth', prefs.explanationDepth]);
+  if (prefs.experienceLevel)   styleRows.push(['Experience Level', prefs.experienceLevel]);
+
+  if (styleRows.length) {
+    lines.push('| Setting | Value |');
+    lines.push('|---|---|');
+    styleRows.forEach(([k, v]) => lines.push(`| ${k} | ${v} |`));
+    lines.push('');
+  }
+
+  // Format Preferences
+  const formatPrefs: string[] = [];
+  if (prefs.preferMarkdown)       formatPrefs.push('Markdown formatting');
+  if (prefs.preferCodeBlocks)     formatPrefs.push('Code in fenced blocks');
+  if (prefs.preferBulletPoints)   formatPrefs.push('Bullet points over paragraphs');
+  if (prefs.preferNumberedSteps)  formatPrefs.push('Numbered steps for procedures');
+  if (prefs.directAnswers)        formatPrefs.push('Direct answers (skip preamble)');
+  if (prefs.showReasoningFirst)   formatPrefs.push('Show reasoning before answer');
+  if (prefs.askBeforeActing)      formatPrefs.push('Ask before making changes');
+  if (prefs.avoidApologies)       formatPrefs.push('No apologies — just do it');
+
+  if (formatPrefs.length) {
+    lines.push('## Format Preferences');
+    lines.push('');
+    formatPrefs.forEach(p => lines.push(`- ${p}`));
+    lines.push('');
+  }
+
+  // Custom Rules
+  if (prefs.customRules?.length) {
+    lines.push('## Rules & Constraints');
+    lines.push('');
+    lines.push('*Always follow these:*');
+    lines.push('');
+    prefs.customRules.forEach(r => lines.push(`- ${r}`));
+    lines.push('');
+  }
+
+  // Preferred Patterns
+  if (prefs.preferPatterns?.length) {
+    lines.push('## Preferred Patterns');
+    lines.push('');
+    prefs.preferPatterns.forEach(p => lines.push(`- ${p}`));
+    lines.push('');
+  }
+
+  // Avoid Patterns
+  if (prefs.avoidPatterns?.length) {
+    lines.push('## Patterns to Avoid');
+    lines.push('');
+    prefs.avoidPatterns.forEach(p => lines.push(`- ${p}`));
+    lines.push('');
+  }
+
+  // Domain Expertise
+  if (prefs.domainExpertise?.length || prefs.preferredLanguages?.length || prefs.typicalProjectTypes?.length) {
+    lines.push('## Domain Knowledge');
+    lines.push('');
+    if (prefs.domainExpertise?.length)     lines.push(`**Expertise:** ${prefs.domainExpertise.join(', ')}`);
+    if (prefs.preferredLanguages?.length)   lines.push(`**Languages:** ${prefs.preferredLanguages.join(', ')}`);
+    if (prefs.typicalProjectTypes?.length)  lines.push(`**Project Types:** ${prefs.typicalProjectTypes.join(', ')}`);
+    if (prefs.commonTopics?.length)         lines.push(`**Common Topics:** ${prefs.commonTopics.join(', ')}`);
+    lines.push('');
+  }
+
+  // Notes
+  if (prefs.notes) {
+    lines.push('## Notes');
+    lines.push('');
+    lines.push(prefs.notes);
+    lines.push('');
+  }
+
+  lines.push('---');
+  lines.push('');
+  lines.push('*Generated by [AI.md](https://github.com/ai-md/vscode-extension) — Cross-platform AI context continuity*');
+
+  return lines.join('\n');
+}
+
+export function parsePreferences(content: string): Partial<AIMdPreferences> {
+  const prefs: Partial<AIMdPreferences> = {};
+
+  const grab = (pattern: RegExp) => {
+    const m = content.match(pattern);
+    return m ? m[1].trim() : undefined;
+  };
+
+  const listSection = (heading: string): string[] | undefined => {
+    const re = new RegExp(`## ${heading}\\n\\n(?:\\*[^*]+\\*\\n\\n)?([\\s\\S]+?)(?=\\n## |\\n---\\n|$)`);
+    const m = content.match(re);
+    if (!m) return undefined;
+    return m[1].split('\n')
+      .filter(l => l.startsWith('- '))
+      .map(l => l.replace(/^- /, '').trim())
+      .filter(Boolean);
+  };
+
+  prefs.project        = grab(/^# AI Preferences[—\-–]+\s*(.+)$/m);
+  prefs.responseStyle  = grab(/\| Style \| ([^|]+) \|/);
+  prefs.preferredTone  = grab(/\| Tone \| ([^|]+) \|/);
+  prefs.codeStyle      = grab(/\| Code Style \| ([^|]+) \|/);
+  prefs.explanationDepth = grab(/\| Explanation Depth \| ([^|]+) \|/);
+  prefs.experienceLevel  = grab(/\| Experience Level \| ([^|]+) \|/);
+
+  prefs.customRules    = listSection('Rules & Constraints');
+  prefs.preferPatterns = listSection('Preferred Patterns');
+  prefs.avoidPatterns  = listSection('Patterns to Avoid');
+
+  return prefs;
+}
+
+export function defaultPreferences(project: string): AIMdPreferences {
+  return {
+    version:            AIMD_VERSION,
+    project,
+    updated:            new Date().toISOString(),
+    responseStyle:      'concise',
+    preferredTone:      'professional',
+    codeStyle:          'commented',
+    explanationDepth:   'thorough',
+    preferMarkdown:     true,
+    preferCodeBlocks:   true,
+    preferBulletPoints: true,
+    preferNumberedSteps: true,
+    directAnswers:      true,
+    askBeforeActing:    false,
+    avoidApologies:     true,
+    experienceLevel:    'intermediate',
+    customRules:        [],
+    preferPatterns:     [],
+    avoidPatterns:      [],
+    notes:              '',
+  };
+}
 
 export interface AIMdContext {
   // ── Identity ────────────────────────────────────────────────────────────────
@@ -18,10 +238,23 @@ export interface AIMdContext {
   techStack?: string[];          // detected languages/frameworks
   gitRemote?: string;            // repo URL
 
-  // ── Task (user-set) ─────────────────────────────────────────────────────────
+  // ── Task (user-set or AI-inferred) ──────────────────────────────────────────
   task: string;
   notes: string;
   nextSteps: string[];
+
+  // ── AI-generated enrichment (optional — requires API key) ────────────────────
+  aiGeneratedTask?:      string;    // 1-2 sentence task inferred from git evidence
+  aiContextPoints?:      string[];  // 3 key facts the next AI session needs immediately
+  aiNextSteps?:          string[];  // 3 suggested next steps from commit trajectory
+  aiAnalysisModel?:      string;    // e.g. "claude-3-haiku-20240307"
+  aiAnalysisTimestamp?:  string;    // ISO timestamp — tells you how fresh the analysis is
+
+  // ── Captured conversation (from browser extension "Save Chat") ───────────────
+  capturedPrompts?:       string[];  // last N user messages from the AI chat
+  conversationPlatform?:  string;    // "Claude" | "ChatGPT" | "Gemini" etc.
+  conversationUrl?:       string;    // URL of the chat session
+  conversationCapturedAt?: string;  // ISO timestamp
 
   // ── Live state (auto-collected) ──────────────────────────────────────────────
   openFiles: string[];           // open editor tabs (VS Code) or recently changed (CLI)
@@ -74,10 +307,25 @@ export function serialize(ctx: AIMdContext): string {
   lines.push('');
 
   // ── Current Task ─────────────────────────────────────────────────────────────
-  if (ctx.task) {
+  const taskText = ctx.task || ctx.aiGeneratedTask;
+  if (taskText) {
     lines.push('## Current Task');
     lines.push('');
-    lines.push(ctx.task);
+    lines.push(taskText);
+    if (!ctx.task && ctx.aiGeneratedTask) {
+      lines.push('');
+      lines.push(`*Auto-inferred by ${ctx.aiAnalysisModel ?? 'AI'} — edit above if inaccurate*`);
+    }
+    lines.push('');
+  }
+
+  // ── AI Context Points ────────────────────────────────────────────────────────
+  if (ctx.aiContextPoints?.length) {
+    lines.push('## Key Context');
+    lines.push('');
+    lines.push('*AI-extracted — things the next session needs to know immediately:*');
+    lines.push('');
+    ctx.aiContextPoints.forEach(p => lines.push(`- ${p}`));
     lines.push('');
   }
 
@@ -89,11 +337,33 @@ export function serialize(ctx: AIMdContext): string {
     lines.push('');
   }
 
+  // ── Captured Prompts (from browser extension) ────────────────────────────────
+  if (ctx.capturedPrompts?.length) {
+    const platform = ctx.conversationPlatform ?? 'AI Chat';
+    const when     = ctx.conversationCapturedAt ? ` — ${fmt(ctx.conversationCapturedAt)}` : '';
+    lines.push(`## Recent Prompts (${platform}${when})`);
+    lines.push('');
+    lines.push('*What was asked in the last chat session:*');
+    lines.push('');
+    ctx.capturedPrompts.forEach((p, i) => {
+      lines.push(`**[${i + 1}]** ${p}`);
+      lines.push('');
+    });
+  }
+
   // ── Next Steps ───────────────────────────────────────────────────────────────
-  if (ctx.nextSteps.length > 0) {
+  const allNextSteps = [
+    ...ctx.nextSteps,
+    ...(ctx.nextSteps.length === 0 && ctx.aiNextSteps ? ctx.aiNextSteps : []),
+  ];
+  if (allNextSteps.length > 0) {
     lines.push('## Next Steps');
     lines.push('');
-    ctx.nextSteps.forEach((s, i) => lines.push(`${i + 1}. ${s}`));
+    allNextSteps.forEach((s, i) => lines.push(`${i + 1}. ${s}`));
+    if (ctx.nextSteps.length === 0 && ctx.aiNextSteps?.length) {
+      lines.push('');
+      lines.push(`*Suggested by ${ctx.aiAnalysisModel ?? 'AI'} based on commit history*`);
+    }
     lines.push('');
   }
 
@@ -184,6 +454,28 @@ export function parse(content: string): Partial<AIMdContext> {
       .filter(l => l.startsWith('- ')).map(l => l.replace(/^- `?/, '').replace(/`?$/, ''));
   }
 
+  // Parse AI context points
+  const keyCtxRaw = section('Key Context');
+  if (keyCtxRaw) {
+    ctx.aiContextPoints = keyCtxRaw
+      .split('\n')
+      .filter(l => l.startsWith('- '))
+      .map(l => l.replace(/^- /, '').trim())
+      .filter(Boolean);
+  }
+
+  // Parse captured prompts (heading has dynamic platform/timestamp suffix)
+  const promptsMatch = content.match(/## Recent Prompts[^\n]*\n\n(?:\*[^*]+\*\n\n)?([\s\S]+?)(?=\n## |\n---\n|\n*$)/);
+  if (promptsMatch) {
+    ctx.capturedPrompts = promptsMatch[1]
+      .split('\n')
+      .filter(l => l.startsWith('**['))
+      .map(l => l.replace(/^\*\*\[\d+\]\*\*\s*/, '').trim())
+      .filter(Boolean);
+    const platMatch = content.match(/## Recent Prompts \(([^)—–-]+)/);
+    if (platMatch) ctx.conversationPlatform = platMatch[1].trim();
+  }
+
   return ctx;
 }
 
@@ -217,7 +509,7 @@ Please review this context and help me continue seamlessly from where I left off
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function fmt(iso: string): string {
+export function fmt(iso: string): string {
   try {
     const d = new Date(iso);
     return `${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;

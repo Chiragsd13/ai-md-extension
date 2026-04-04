@@ -3,9 +3,16 @@
 src/**
 node_modules/**
 test-context/**
+test/**
+scripts/**
+jetbrains-plugin/**
 .gitignore
+.github/**
+.claude/**
 esbuild.js
 tsconfig.json
+INSTALL.md
 **/*.ts
 **/*.map
 !dist/**
+!resources/**

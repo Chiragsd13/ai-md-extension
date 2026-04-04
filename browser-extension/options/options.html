@@ -16,21 +16,13 @@
       padding: 0;
     }
 
-    /* ─── Layout ─────────────────────────────────────────────────── */
     .page { max-width: 640px; margin: 0 auto; padding: 40px 24px 60px; }
 
-    /* ─── Header ─────────────────────────────────────────────────── */
     .page-header { margin-bottom: 36px; }
-    .logo {
-      font-size: 28px;
-      font-weight: 700;
-      letter-spacing: -1px;
-      color: #fff;
-    }
+    .logo { font-size: 28px; font-weight: 700; letter-spacing: -1px; color: #fff; }
     .logo span { color: #444; }
     .subtitle { color: #555; font-size: 12px; margin-top: 4px; letter-spacing: 0.5px; text-transform: uppercase; }
 
-    /* ─── Card ────────────────────────────────────────────────────── */
     .card {
       background: #0f0f0f;
       border: 1px solid #1c1c1c;
@@ -49,7 +41,6 @@
       border-bottom: 1px solid #1a1a1a;
     }
 
-    /* ─── Form fields ─────────────────────────────────────────────── */
     .field { margin-bottom: 18px; }
     .field:last-child { margin-bottom: 0; }
     label {
@@ -82,11 +73,7 @@
     .hint a { color: #666; text-decoration: underline; cursor: pointer; }
     .hint a:hover { color: #999; }
 
-    /* ─── Token visibility toggle ─────────────────────────────────── */
-    .input-row {
-      display: flex;
-      gap: 8px;
-    }
+    .input-row { display: flex; gap: 8px; }
     .input-row input { flex: 1; }
     .toggle-btn {
       background: #161616;
@@ -102,7 +89,6 @@
     }
     .toggle-btn:hover { background: #1e1e1e; color: #aaa; border-color: #333; }
 
-    /* ─── Buttons ─────────────────────────────────────────────────── */
     .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 24px; }
     .btn {
       padding: 10px 20px;
@@ -119,19 +105,11 @@
     .btn:hover  { background: #1e1e1e; border-color: #3a3a3a; }
     .btn:active { background: #262626; }
     .btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .btn.primary {
-      background: #fff;
-      color: #000;
-      border-color: #fff;
-    }
+    .btn.primary { background: #fff; color: #000; border-color: #fff; }
     .btn.primary:hover  { background: #e8e8e8; border-color: #e8e8e8; }
-    .btn.danger {
-      color: #e55;
-      border-color: #3a1515;
-    }
+    .btn.danger { color: #e55; border-color: #3a1515; }
     .btn.danger:hover { background: #1a0a0a; border-color: #5a2020; }
 
-    /* ─── Status / feedback ───────────────────────────────────────── */
     .feedback-bar {
       padding: 12px 16px;
       border-radius: 6px;
@@ -144,7 +122,6 @@
     .feedback-bar.error { background: #1f0a0a; color: #e55; border: 1px solid #3a1515; }
     .feedback-bar.info  { background: #0f0f1a; color: #77a; border: 1px solid #1f1f3a; }
 
-    /* ─── Status card ─────────────────────────────────────────────── */
     .status-grid { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; }
     .status-key   { color: #444; font-size: 12px; }
     .status-val   { color: #888; font-size: 12px; word-break: break-all; }
@@ -152,14 +129,9 @@
     .status-val.warn  { color: #a83; }
     .status-val.error { color: #e55; }
 
-    /* ─── Section divider ─────────────────────────────────────────── */
     hr { border: none; border-top: 1px solid #1a1a1a; margin: 24px 0; }
 
-    .help-text {
-      font-size: 12px;
-      color: #444;
-      line-height: 1.7;
-    }
+    .help-text { font-size: 12px; color: #444; line-height: 1.7; }
     .help-text code {
       background: #161616;
       border: 1px solid #1f1f1f;
@@ -169,6 +141,78 @@
       font-size: 11px;
       color: #888;
     }
+
+    /* ─── Radio / checkbox groups ──────────────────────────── */
+    .option-group { display: flex; flex-direction: column; gap: 10px; }
+    .option-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 12px;
+      background: #131313;
+      border: 1px solid #1e1e1e;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: border-color 0.12s, background 0.12s;
+    }
+    .option-item:hover { background: #181818; border-color: #2a2a2a; }
+    .option-item.selected { border-color: #2e5a2e; background: #0f1a0f; }
+    .option-item input[type="radio"],
+    .option-item input[type="checkbox"] {
+      margin-top: 2px;
+      accent-color: #5a9;
+    }
+    .option-label { flex: 1; }
+    .option-label strong { font-size: 12px; color: #ddd; font-weight: 600; }
+    .option-label .desc { font-size: 11px; color: #555; margin-top: 3px; line-height: 1.4; }
+
+    /* ─── Toggle switch ──────────────────────────────────── */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+    }
+    .toggle-label { font-size: 13px; color: #ccc; }
+    .toggle-switch {
+      position: relative;
+      width: 40px;
+      height: 22px;
+      background: #2a2a2a;
+      border-radius: 11px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .toggle-switch.on { background: #2e6a2e; }
+    .toggle-switch .knob {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 18px;
+      height: 18px;
+      background: #888;
+      border-radius: 50%;
+      transition: all 0.2s;
+    }
+    .toggle-switch.on .knob { left: 20px; background: #8fc; }
+
+    .btn-connect {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      background: #1a2540;
+      border: 1px solid #2a4070;
+      border-radius: 6px;
+      color: #6ab0e8;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+    .btn-connect:hover { background: #1e3060; border-color: #3a60a0; }
+    .btn-connect.connected { background: #0f1f0f; border-color: #2a5a2a; color: #5a9; }
   </style>
 </head>
 <body>
@@ -179,14 +223,42 @@
     <div class="subtitle">Settings &amp; Configuration</div>
   </div>
 
-  <!-- ── GitHub Sync ──────────────────────────────────────────────── -->
+  <!-- ── Cloud Provider ────────────────────────────────────────────── -->
   <div class="card">
+    <div class="card-title">Cloud Storage Provider</div>
+    <div class="option-group" id="providerGroup">
+      <label class="option-item selected" data-provider="gist">
+        <input type="radio" name="cloudProvider" value="gist" checked>
+        <div class="option-label">
+          <strong>GitHub Gist</strong> <span style="color:#555">(recommended)</span>
+          <div class="desc">Private Gist. Free, no size limit, version history. Requires a GitHub token with gist scope.</div>
+        </div>
+      </label>
+      <label class="option-item" data-provider="gdrive">
+        <input type="radio" name="cloudProvider" value="gdrive">
+        <div class="option-label">
+          <strong>Google Drive</strong>
+          <div class="desc">Saves as .md files in your Drive. Uses Google OAuth — click Connect below.</div>
+        </div>
+      </label>
+      <label class="option-item" data-provider="download">
+        <input type="radio" name="cloudProvider" value="download">
+        <div class="option-label">
+          <strong>Local Download</strong>
+          <div class="desc">Downloads to your <code>Downloads/ai-md/</code> folder. Always works, no auth needed.</div>
+        </div>
+      </label>
+    </div>
+  </div>
+
+  <!-- ── GitHub Sync ──────────────────────────────────────────────── -->
+  <div class="card" id="gistCard">
     <div class="card-title">GitHub Gist — Cloud Sync</div>
 
     <div class="field">
       <label>
         Personal Access Token
-        <span class="required">— required for sync</span>
+        <span class="required">— required for Gist sync</span>
       </label>
       <div class="input-row">
         <input type="password" id="githubToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off">
@@ -194,28 +266,82 @@
       </div>
       <div class="hint">
         Create a token at
-        <a id="tokenLink">github.com → Settings → Developer Settings → Tokens (classic)</a>
-        with the <code>gist</code> scope. Keep it private — it allows reading/writing your Gists.
+        <a id="tokenLink">github.com &rarr; Settings &rarr; Developer Settings &rarr; Tokens (classic)</a>
+        with the <code>gist</code> scope.
       </div>
     </div>
 
     <div class="field">
       <label>Gist ID <span class="required">— auto-filled after first save</span></label>
       <input type="text" id="gistId" placeholder="Auto-filled when you first save context" autocomplete="off">
-      <div class="hint">Leave blank to create a new Gist automatically. Paste an existing Gist ID to reuse it.</div>
+      <div class="hint">Leave blank to create a new Gist automatically.</div>
+    </div>
+  </div>
+
+  <!-- ── Google Drive ──────────────────────────────────────────────── -->
+  <div class="card" id="gdriveCard" style="display:none">
+    <div class="card-title">Google Drive — Cloud Sync</div>
+    <div class="field">
+      <label>Connection</label>
+      <button class="btn-connect" id="btnGdriveConnect">Connect Google Drive</button>
+      <div class="hint" style="margin-top:8px">
+        Signs in with your Google account. AI.md only accesses files it creates (drive.file scope).
+      </div>
     </div>
   </div>
 
   <!-- ── Default Project ─────────────────────────────────────────── -->
   <div class="card">
     <div class="card-title">Default Project</div>
-
     <div class="field">
       <label>Project name</label>
       <input type="text" id="defaultProject" placeholder="my-project  (blank = ai.md)" autocomplete="off">
       <div class="hint">
         Used as the filename: <code>{project}.ai.md</code> — or just <code>ai.md</code> if left blank.
-        This matches the project name used by the VS Code extension and CLI.
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Auto-Save ────────────────────────────────────────────────── -->
+  <div class="card">
+    <div class="card-title">Smart Auto-Save</div>
+
+    <div class="toggle-row">
+      <span class="toggle-label">Enable auto-save</span>
+      <div class="toggle-switch on" id="autoSaveToggle">
+        <div class="knob"></div>
+      </div>
+    </div>
+    <div class="hint" style="margin-bottom:16px">
+      When enabled, AI.md silently saves your conversation context in the background.
+      Triggers: closing the tab, switching away, battery low, token limit warning,
+      or after enough important exchanges accumulate.
+    </div>
+
+    <div class="field">
+      <label>AI Update Mode</label>
+      <div class="option-group" id="aiModeGroup">
+        <label class="option-item selected" data-mode="suggest">
+          <input type="radio" name="aiUpdateMode" value="suggest" checked>
+          <div class="option-label">
+            <strong>Suggest</strong>
+            <div class="desc">Injects an update prompt — you review and send it yourself. Safest.</div>
+          </div>
+        </label>
+        <label class="option-item" data-mode="auto">
+          <input type="radio" name="aiUpdateMode" value="auto">
+          <div class="option-label">
+            <strong>Auto</strong>
+            <div class="desc">Injects + sends + captures the AI response automatically. Fastest.</div>
+          </div>
+        </label>
+        <label class="option-item" data-mode="watch">
+          <input type="radio" name="aiUpdateMode" value="watch">
+          <div class="option-label">
+            <strong>Watch only</strong>
+            <div class="desc">Doesn't inject anything. Just watches for AI responses that look like context docs and saves them.</div>
+          </div>
+        </label>
       </div>
     </div>
   </div>
@@ -224,12 +350,16 @@
   <div class="card" id="statusCard">
     <div class="card-title">Connection Status</div>
     <div class="status-grid" id="statusGrid">
+      <span class="status-key">Provider</span>
+      <span class="status-val" id="s-provider">GitHub Gist</span>
       <span class="status-key">Token</span>
       <span class="status-val" id="s-token">—</span>
       <span class="status-key">Gist</span>
       <span class="status-val" id="s-gist">—</span>
       <span class="status-key">Last sync</span>
       <span class="status-val" id="s-sync">—</span>
+      <span class="status-key">Auto-save</span>
+      <span class="status-val" id="s-autosave">—</span>
     </div>
   </div>
 
@@ -237,18 +367,19 @@
   <div class="card">
     <div class="card-title">How It Works</div>
     <div class="help-text">
-      <p>AI.md saves your project context (git state, open files, tech stack, task notes) as a
-      private Gist on GitHub. On any device or AI platform, click <code>@ AI.md</code> in the
-      chat to resume right where you left off.</p>
+      <p>AI.md saves your project context (git state, open files, tech stack, task notes) to
+      your preferred cloud storage. On any device or AI platform, click <code>@ AI.md</code> in the
+      chat to resume where you left off.</p>
       <br>
-      <p><strong>Workflow:</strong></p>
-      <ol style="margin-left:16px;margin-top:8px;line-height:2;">
-        <li>Install the <strong>VS Code extension</strong> or <strong>CLI</strong> (<code>npm i -g aimd</code>)</li>
-        <li>Save context: <code>aimd save</code> or Ctrl+S in VS Code</li>
-        <li>Open Claude / ChatGPT / Gemini in any browser</li>
-        <li>Click the <strong>@ AI.md</strong> button or use the toolbar popup</li>
-        <li>Your full project context is injected — continue seamlessly</li>
-      </ol>
+      <p><strong>Smart features:</strong></p>
+      <ul style="margin-left:16px;margin-top:8px;line-height:2;">
+        <li><strong>Auto-tracking</strong> — watches your conversation, scores each exchange for importance, batches saves</li>
+        <li><strong>AI-powered update</strong> — asks the AI you're chatting with to write the context doc (no extra API cost)</li>
+        <li><strong>Auto-save triggers</strong> — tab close, focus lost, battery low, token limit warning</li>
+        <li><strong>Multi-cloud</strong> — GitHub Gist, Google Drive, or local download</li>
+      </ul>
+      <br>
+      <p><strong>Works with:</strong> VS Code, Cursor, JetBrains IDEs, CLI (<code>npm i -g aimd</code>), Chrome extension</p>
     </div>
   </div>
 
