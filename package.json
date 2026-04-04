@@ -6,7 +6,7 @@
   "publisher": "aimd",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ai-md/vscode-extension"
+    "url": "https://github.com/Chiragsd13/ai-md-extension"
   },
   "engines": {
     "vscode": "^1.90.0",
@@ -170,8 +170,8 @@
     "typecheck":         "tsc --noEmit",
     "icons":             "node scripts/generate-icons.js",
     "prepackage":        "node scripts/generate-icons.js && node scripts/check-dist.js",
-    "package":           "vsce package --no-dependencies",
-    "publish":           "vsce publish --no-dependencies"
+    "package":           "npx @vscode/vsce package --no-dependencies",
+    "publish":           "npx @vscode/vsce publish --no-dependencies"
   },
 
   "devDependencies": {
