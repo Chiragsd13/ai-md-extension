@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI.md — Options</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #080808;
+      color: #e0e0e0;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 14px;
+      min-height: 100vh;
+      padding: 0;
+    }
+
+    /* ─── Layout ─────────────────────────────────────────────────── */
+    .page { max-width: 640px; margin: 0 auto; padding: 40px 24px 60px; }
+
+    /* ─── Header ─────────────────────────────────────────────────── */
+    .page-header { margin-bottom: 36px; }
+    .logo {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -1px;
+      color: #fff;
+    }
+    .logo span { color: #444; }
+    .subtitle { color: #555; font-size: 12px; margin-top: 4px; letter-spacing: 0.5px; text-transform: uppercase; }
+
+    /* ─── Card ────────────────────────────────────────────────────── */
+    .card {
+      background: #0f0f0f;
+      border: 1px solid #1c1c1c;
+      border-radius: 10px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    .card-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #555;
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #1a1a1a;
+    }
+
+    /* ─── Form fields ─────────────────────────────────────────────── */
+    .field { margin-bottom: 18px; }
+    .field:last-child { margin-bottom: 0; }
+    label {
+      display: block;
+      font-size: 12px;
+      color: #aaa;
+      margin-bottom: 6px;
+    }
+    label .required { color: #555; font-size: 10px; }
+    input[type="text"], input[type="password"] {
+      width: 100%;
+      background: #161616;
+      border: 1px solid #262626;
+      border-radius: 6px;
+      color: #e0e0e0;
+      font-family: inherit;
+      font-size: 13px;
+      padding: 9px 12px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input:focus { border-color: #404040; }
+    input::placeholder { color: #333; }
+    .hint {
+      font-size: 11px;
+      color: #444;
+      margin-top: 5px;
+      line-height: 1.5;
+    }
+    .hint a { color: #666; text-decoration: underline; cursor: pointer; }
+    .hint a:hover { color: #999; }
+
+    /* ─── Token visibility toggle ─────────────────────────────────── */
+    .input-row {
+      display: flex;
+      gap: 8px;
+    }
+    .input-row input { flex: 1; }
+    .toggle-btn {
+      background: #161616;
+      border: 1px solid #262626;
+      border-radius: 6px;
+      color: #666;
+      font-family: inherit;
+      font-size: 12px;
+      padding: 0 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.12s;
+    }
+    .toggle-btn:hover { background: #1e1e1e; color: #aaa; border-color: #333; }
+
+    /* ─── Buttons ─────────────────────────────────────────────────── */
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 24px; }
+    .btn {
+      padding: 10px 20px;
+      border-radius: 6px;
+      border: 1px solid #2a2a2a;
+      background: #161616;
+      color: #e0e0e0;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+    .btn:hover  { background: #1e1e1e; border-color: #3a3a3a; }
+    .btn:active { background: #262626; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn.primary {
+      background: #fff;
+      color: #000;
+      border-color: #fff;
+    }
+    .btn.primary:hover  { background: #e8e8e8; border-color: #e8e8e8; }
+    .btn.danger {
+      color: #e55;
+      border-color: #3a1515;
+    }
+    .btn.danger:hover { background: #1a0a0a; border-color: #5a2020; }
+
+    /* ─── Status / feedback ───────────────────────────────────────── */
+    .feedback-bar {
+      padding: 12px 16px;
+      border-radius: 6px;
+      font-size: 12px;
+      margin-top: 20px;
+      display: none;
+    }
+    .feedback-bar.show { display: block; }
+    .feedback-bar.ok    { background: #0a1f0f; color: #3a7; border: 1px solid #1a3a1f; }
+    .feedback-bar.error { background: #1f0a0a; color: #e55; border: 1px solid #3a1515; }
+    .feedback-bar.info  { background: #0f0f1a; color: #77a; border: 1px solid #1f1f3a; }
+
+    /* ─── Status card ─────────────────────────────────────────────── */
+    .status-grid { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; }
+    .status-key   { color: #444; font-size: 12px; }
+    .status-val   { color: #888; font-size: 12px; word-break: break-all; }
+    .status-val.ok    { color: #3a7; }
+    .status-val.warn  { color: #a83; }
+    .status-val.error { color: #e55; }
+
+    /* ─── Section divider ─────────────────────────────────────────── */
+    hr { border: none; border-top: 1px solid #1a1a1a; margin: 24px 0; }
+
+    .help-text {
+      font-size: 12px;
+      color: #444;
+      line-height: 1.7;
+    }
+    .help-text code {
+      background: #161616;
+      border: 1px solid #1f1f1f;
+      border-radius: 3px;
+      padding: 1px 6px;
+      font-family: inherit;
+      font-size: 11px;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <div class="page-header">
+    <div class="logo"><span>@</span>ai.md</div>
+    <div class="subtitle">Settings &amp; Configuration</div>
+  </div>
+
+  <!-- ── GitHub Sync ──────────────────────────────────────────────── -->
+  <div class="card">
+    <div class="card-title">GitHub Gist — Cloud Sync</div>
+
+    <div class="field">
+      <label>
+        Personal Access Token
+        <span class="required">— required for sync</span>
+      </label>
+      <div class="input-row">
+        <input type="password" id="githubToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+        <button class="toggle-btn" id="tokenToggle">Show</button>
+      </div>
+      <div class="hint">
+        Create a token at
+        <a id="tokenLink">github.com → Settings → Developer Settings → Tokens (classic)</a>
+        with the <code>gist</code> scope. Keep it private — it allows reading/writing your Gists.
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Gist ID <span class="required">— auto-filled after first save</span></label>
+      <input type="text" id="gistId" placeholder="Auto-filled when you first save context" autocomplete="off">
+      <div class="hint">Leave blank to create a new Gist automatically. Paste an existing Gist ID to reuse it.</div>
+    </div>
+  </div>
+
+  <!-- ── Default Project ─────────────────────────────────────────── -->
+  <div class="card">
+    <div class="card-title">Default Project</div>
+
+    <div class="field">
+      <label>Project name</label>
+      <input type="text" id="defaultProject" placeholder="my-project  (blank = ai.md)" autocomplete="off">
+      <div class="hint">
+        Used as the filename: <code>{project}.ai.md</code> — or just <code>ai.md</code> if left blank.
+        This matches the project name used by the VS Code extension and CLI.
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Status ──────────────────────────────────────────────────── -->
+  <div class="card" id="statusCard">
+    <div class="card-title">Connection Status</div>
+    <div class="status-grid" id="statusGrid">
+      <span class="status-key">Token</span>
+      <span class="status-val" id="s-token">—</span>
+      <span class="status-key">Gist</span>
+      <span class="status-val" id="s-gist">—</span>
+      <span class="status-key">Last sync</span>
+      <span class="status-val" id="s-sync">—</span>
+    </div>
+  </div>
+
+  <!-- ── Help ─────────────────────────────────────────────────────── -->
+  <div class="card">
+    <div class="card-title">How It Works</div>
+    <div class="help-text">
+      <p>AI.md saves your project context (git state, open files, tech stack, task notes) as a
+      private Gist on GitHub. On any device or AI platform, click <code>@ AI.md</code> in the
+      chat to resume right where you left off.</p>
+      <br>
+      <p><strong>Workflow:</strong></p>
+      <ol style="margin-left:16px;margin-top:8px;line-height:2;">
+        <li>Install the <strong>VS Code extension</strong> or <strong>CLI</strong> (<code>npm i -g aimd</code>)</li>
+        <li>Save context: <code>aimd save</code> or Ctrl+S in VS Code</li>
+        <li>Open Claude / ChatGPT / Gemini in any browser</li>
+        <li>Click the <strong>@ AI.md</strong> button or use the toolbar popup</li>
+        <li>Your full project context is injected — continue seamlessly</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- ── Action buttons ─────────────────────────────────────────── -->
+  <div class="btn-row">
+    <button class="btn primary" id="btnSave">Save Settings</button>
+    <button class="btn" id="btnTest">Test Connection</button>
+    <button class="btn danger" id="btnClear">Clear All Data</button>
+  </div>
+
+  <div class="feedback-bar" id="feedbackBar"></div>
+
+</div>
+<script src="options.js"></script>
+</body>
+</html>

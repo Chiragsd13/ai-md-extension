@@ -1,0 +1,179 @@
+{
+  "name": "aimd",
+  "displayName": "AI.md – Context Continuity",
+  "description": "Save and restore your AI workflow context across devices and platforms. Never lose context when switching AIs or hitting usage limits.",
+  "version": "1.0.0",
+  "publisher": "aimd",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ai-md/vscode-extension"
+  },
+  "engines": {
+    "vscode": "^1.90.0",
+    "node": ">=18.0.0"
+  },
+  "categories": ["Other", "Machine Learning", "AI"],
+  "keywords": ["ai", "context", "continuity", "claude", "chatgpt", "copilot", "sync", "workflow", "habits"],
+
+  "main": "./dist/extension.js",
+  "bin": {
+    "aimd": "./dist/cli.js"
+  },
+
+  "activationEvents": ["onStartupFinished"],
+
+  "contributes": {
+    "commands": [
+      { "command": "aimd.saveContext",       "title": "Save Context Now",                  "category": "AI.md", "icon": "$(cloud-upload)" },
+      { "command": "aimd.loadContext",       "title": "Load Context",                      "category": "AI.md", "icon": "$(cloud-download)" },
+      { "command": "aimd.addNote",           "title": "Add Context Note",                  "category": "AI.md", "icon": "$(note)" },
+      { "command": "aimd.viewContext",       "title": "View Saved Context",                "category": "AI.md", "icon": "$(preview)" },
+      { "command": "aimd.viewHabits",        "title": "View Habits Profile",               "category": "AI.md", "icon": "$(graph)" },
+      { "command": "aimd.copyResumePrompt",  "title": "Copy Resume Prompt (for any AI)",   "category": "AI.md", "icon": "$(copy)" },
+      { "command": "aimd.openConfig",        "title": "Configure Sync Provider",           "category": "AI.md", "icon": "$(settings-gear)" },
+      { "command": "aimd.clearNotes",        "title": "Clear Context Notes",               "category": "AI.md" }
+    ],
+
+    "chatParticipants": [
+      {
+        "id": "aimd.assistant",
+        "name": "ai.md",
+        "fullName": "AI.md Context",
+        "description": "Save, load, and use your AI workflow context. Type @ai.md [project] to retrieve context for any project.",
+        "isSticky": false,
+        "commands": [
+          { "name": "save",   "description": "Save the current workspace context" },
+          { "name": "load",   "description": "Load context for a project" },
+          { "name": "list",   "description": "List all saved project contexts" },
+          { "name": "prompt", "description": "Generate a resume prompt for any AI platform" },
+          { "name": "habits", "description": "Show your workflow habits and learning profile" },
+          { "name": "help",   "description": "Show usage guide" }
+        ]
+      }
+    ],
+
+    "configuration": {
+      "title": "AI.md",
+      "properties": {
+        "aimd.syncProvider": {
+          "type": "string",
+          "enum": ["google-drive", "onedrive", "github-gist", "local-folder", "webhook"],
+          "enumDescriptions": [
+            "Google Drive — OAuth sign-in once, private app folder, any device",
+            "Microsoft OneDrive — device code sign-in once, private app folder, any device",
+            "GitHub Gist — private Gist, any device with your token",
+            "Local folder — point at Dropbox, OneDrive Desktop, iCloud Drive, etc.",
+            "Webhook — POST context to a custom URL"
+          ],
+          "default": "local-folder",
+          "description": "Where to sync your AI context"
+        },
+        "aimd.localFolderPath": {
+          "type": "string",
+          "default": "",
+          "description": "Absolute folder path (cloud-synced folder recommended)"
+        },
+        "aimd.githubToken": {
+          "type": "string",
+          "default": "",
+          "description": "GitHub Personal Access Token with 'gist' scope"
+        },
+        "aimd.gistId": {
+          "type": "string",
+          "default": "",
+          "description": "GitHub Gist ID — auto-created on first save if blank"
+        },
+        "aimd.webhookUrl": {
+          "type": "string",
+          "default": "",
+          "description": "Webhook URL for custom sync"
+        },
+        "aimd.autoSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically save context on an interval"
+        },
+        "aimd.autoSaveInterval": {
+          "type": "number",
+          "default": 15,
+          "minimum": 1,
+          "maximum": 120,
+          "description": "Auto-save interval in minutes"
+        },
+        "aimd.saveOnFileSave": {
+          "type": "boolean",
+          "default": false,
+          "description": "Save context every time you save a file"
+        },
+        "aimd.includeGitInfo": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include git branch and recent commits"
+        },
+        "aimd.includeFileTree": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include project file tree snapshot"
+        },
+        "aimd.fileTreeDepth": {
+          "type": "number",
+          "default": 3,
+          "minimum": 1,
+          "maximum": 6,
+          "description": "Maximum file tree depth"
+        },
+        "aimd.platform": {
+          "type": "string",
+          "default": "Claude",
+          "description": "Current AI platform (recorded in context file)"
+        },
+        "aimd.trackHabits": {
+          "type": "boolean",
+          "default": true,
+          "description": "Maintain a habits.ai.md learning profile (updated on every save)"
+        }
+      }
+    },
+
+    "keybindings": [
+      { "command": "aimd.saveContext",      "key": "ctrl+alt+s", "mac": "cmd+alt+s" },
+      { "command": "aimd.loadContext",      "key": "ctrl+alt+l", "mac": "cmd+alt+l" },
+      { "command": "aimd.addNote",          "key": "ctrl+alt+n", "mac": "cmd+alt+n" }
+    ],
+
+    "menus": {
+      "commandPalette": [
+        { "command": "aimd.saveContext" },
+        { "command": "aimd.loadContext" },
+        { "command": "aimd.addNote" },
+        { "command": "aimd.viewContext" },
+        { "command": "aimd.viewHabits" },
+        { "command": "aimd.copyResumePrompt" },
+        { "command": "aimd.openConfig" },
+        { "command": "aimd.clearNotes" }
+      ]
+    }
+  },
+
+  "scripts": {
+    "vscode:prepublish": "node esbuild.js --production",
+    "compile":           "node esbuild.js",
+    "compile:cli":       "node esbuild.js --cli",
+    "compile:all":       "node esbuild.js --all",
+    "watch":             "node esbuild.js --watch",
+    "watch:all":         "node esbuild.js --all --watch",
+    "typecheck":         "tsc --noEmit",
+    "icons":             "node scripts/generate-icons.js",
+    "prepackage":        "node scripts/generate-icons.js && node scripts/check-dist.js",
+    "package":           "vsce package --no-dependencies",
+    "publish":           "vsce publish --no-dependencies"
+  },
+
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.90.0",
+    "esbuild": "^0.20.0",
+    "typescript": "^5.3.0",
+    "@vscode/vsce": "^2.24.0"
+  }
+}

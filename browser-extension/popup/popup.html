@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI.md</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      width: 300px;
+      background: #0c0c0c;
+      color: #e0e0e0;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 13px;
+      overflow: hidden;
+    }
+
+    /* ─── Header ─────────────────────────────────────────────────── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 13px 15px 11px;
+      background: #0c0c0c;
+      border-bottom: 1px solid #1c1c1c;
+    }
+    .logo {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.5px;
+      line-height: 1;
+    }
+    .logo .at { color: #666; margin-right: 1px; }
+    .platform-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: #161616;
+      border: 1px solid #252525;
+      border-radius: 20px;
+      padding: 3px 9px 3px 7px;
+      font-size: 10px;
+      color: #777;
+      letter-spacing: 0.3px;
+      transition: all 0.15s;
+    }
+    .platform-badge.active {
+      border-color: #2e4a2e;
+      color: #5a9;
+      background: #0f1f0f;
+    }
+    .platform-badge .pdot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: #333; flex-shrink: 0;
+    }
+    .platform-badge.active .pdot { background: #5a9; }
+
+    /* ─── Sync status ─────────────────────────────────────────────── */
+    .sync-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 15px;
+      background: #0f0f0f;
+      border-bottom: 1px solid #181818;
+    }
+    .sdot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #333; flex-shrink: 0;
+      transition: background 0.2s;
+    }
+    .sdot.ok   { background: #3a7; }
+    .sdot.warn { background: #b80; }
+    .sdot.err  { background: #c33; }
+    .sync-text { font-size: 11px; color: #666; flex: 1; }
+    .sync-time { font-size: 10px; color: #333; }
+
+    /* ─── Project selector ────────────────────────────────────────── */
+    .proj-row {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      padding: 10px 15px;
+      border-bottom: 1px solid #181818;
+      background: #0c0c0c;
+    }
+    .proj-label {
+      font-size: 10px;
+      color: #444;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      margin-right: 8px;
+    }
+    .proj-row input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #e0e0e0;
+      font-family: inherit;
+      font-size: 12px;
+      outline: none;
+      min-width: 0;
+    }
+    .proj-row input::placeholder { color: #333; }
+
+    /* ─── Primary action ─────────────────────────────────────────── */
+    .primary-action {
+      padding: 11px 15px;
+      border-bottom: 1px solid #181818;
+    }
+    .btn-inject {
+      width: 100%;
+      background: #fff;
+      color: #000;
+      border: none;
+      border-radius: 7px;
+      padding: 9px 14px;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      letter-spacing: 0.2px;
+      transition: all 0.12s;
+    }
+    .btn-inject:hover  { background: #eee; }
+    .btn-inject:active { background: #ddd; transform: scale(0.99); }
+    .btn-inject:disabled {
+      background: #1a1a1a;
+      color: #444;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .btn-inject .arrow { font-size: 13px; }
+
+    /* ─── Secondary actions ───────────────────────────────────────── */
+    .secondary-row {
+      display: flex;
+      gap: 6px;
+      padding: 8px 15px;
+      border-bottom: 1px solid #181818;
+    }
+    .btn-sec {
+      flex: 1;
+      background: #161616;
+      border: 1px solid #222;
+      border-radius: 6px;
+      color: #aaa;
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 7px 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      transition: all 0.12s;
+    }
+    .btn-sec:hover  { background: #1e1e1e; border-color: #333; color: #ddd; }
+    .btn-sec:active { background: #242424; }
+    .btn-sec:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    /* ─── File list ───────────────────────────────────────────────── */
+    .files-section {
+      border-bottom: 1px solid #181818;
+    }
+    .files-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px 15px 4px;
+    }
+    .files-label { font-size: 10px; color: #3a3a3a; text-transform: uppercase; letter-spacing: 0.5px; }
+    .files-list { list-style: none; max-height: 88px; overflow-y: auto; padding: 0 8px 6px; }
+    .files-list::-webkit-scrollbar { width: 3px; }
+    .files-list::-webkit-scrollbar-track { background: transparent; }
+    .files-list::-webkit-scrollbar-thumb { background: #222; border-radius: 3px; }
+    .files-list li {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 8px;
+      border-radius: 5px;
+      font-size: 11px;
+      color: #666;
+      cursor: pointer;
+      transition: all 0.1s;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+    .files-list li:hover { background: #161616; color: #ccc; }
+    .files-list li.selected { background: #141f14; color: #5a9; }
+    .files-list li .ficon { font-size: 10px; flex-shrink: 0; opacity: 0.5; }
+    .files-list li .fname { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+    .files-list li .fcheck { font-size: 10px; color: #5a9; display: none; }
+    .files-list li.selected .fcheck { display: block; }
+
+    /* ─── Feedback ────────────────────────────────────────────────── */
+    .feedback-bar {
+      padding: 8px 15px;
+      font-size: 11px;
+      line-height: 1.4;
+      display: none;
+      border-bottom: 1px solid #181818;
+    }
+    .feedback-bar.show { display: block; }
+    .feedback-bar.ok    { color: #4b8; background: #0a140a; }
+    .feedback-bar.error { color: #e66; background: #150a0a; }
+
+    /* ─── Footer ──────────────────────────────────────────────────── */
+    .footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 15px;
+    }
+    .footer-left { display: flex; align-items: center; gap: 10px; }
+    .footer a {
+      font-size: 11px;
+      color: #333;
+      text-decoration: none;
+      cursor: pointer;
+      transition: color 0.1s;
+    }
+    .footer a:hover { color: #777; }
+    .kbd {
+      font-size: 9px;
+      color: #2a2a2a;
+      background: #141414;
+      border: 1px solid #1e1e1e;
+      border-radius: 3px;
+      padding: 1px 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo"><span class="at">@</span>ai.md</div>
+    <div class="platform-badge" id="platformBadge">
+      <span class="pdot"></span>
+      <span id="platformName">not on AI page</span>
+    </div>
+  </div>
+
+  <!-- Sync status -->
+  <div class="sync-row">
+    <div class="sdot" id="syncDot"></div>
+    <span class="sync-text" id="syncText">Checking…</span>
+    <span class="sync-time" id="syncTime"></span>
+  </div>
+
+  <!-- Project selector -->
+  <div class="proj-row">
+    <span class="proj-label">Project</span>
+    <input type="text" id="projectInput" placeholder="my-project  (blank = default)" autocomplete="off" spellcheck="false">
+  </div>
+
+  <!-- Primary inject button -->
+  <div class="primary-action">
+    <button class="btn-inject" id="btnInject" disabled>
+      <span class="arrow">↓</span>
+      <span id="btnInjectLabel">Inject into chat</span>
+    </button>
+  </div>
+
+  <!-- Secondary buttons -->
+  <div class="secondary-row">
+    <button class="btn-sec" id="btnCopy" title="Copy context to clipboard">
+      <span>⎘</span> Copy
+    </button>
+    <button class="btn-sec" id="btnRefresh" title="Refresh saved files list">
+      <span>↺</span> Refresh
+    </button>
+    <button class="btn-sec" id="optionsBtn" title="Open settings">
+      <span>⚙</span> Settings
+    </button>
+  </div>
+
+  <!-- Saved files -->
+  <div class="files-section" id="filesSection" style="display:none">
+    <div class="files-header">
+      <span class="files-label">Saved contexts</span>
+    </div>
+    <ul class="files-list" id="filesList"></ul>
+  </div>
+
+  <!-- Feedback -->
+  <div class="feedback-bar" id="feedbackBar"></div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div class="footer-left">
+      <a id="optionsLink">⚙ Options</a>
+    </div>
+    <span class="kbd">Enter ↓ inject</span>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

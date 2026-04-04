@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<!-- Open this file in a browser to generate PNG icons from the SVG source.
+     Right-click each canvas and "Save image as" → icon16.png, icon32.png, etc. -->
+<html>
+<head>
+  <title>Generate AI.md Icons</title>
+  <style>
+    body { background:#111; color:#eee; font-family:monospace; padding:20px; }
+    .row { display:flex; gap:20px; align-items:flex-end; margin:20px 0; }
+    canvas { border:1px solid #333; display:block; }
+    p { margin:4px 0 0; font-size:11px; color:#666; text-align:center; }
+    button { background:#222; color:#eee; border:1px solid #444; padding:6px 12px;
+             font-family:monospace; cursor:pointer; margin-top:16px; border-radius:4px; }
+    button:hover { background:#333; }
+  </style>
+</head>
+<body>
+<h2 style="margin:0 0 8px">AI.md — Icon Generator</h2>
+<p style="color:#555;margin:0 0 20px">Right-click a canvas → "Save image as" to save each PNG.</p>
+
+<div class="row" id="canvases"></div>
+<button onclick="downloadAll()">Download All</button>
+
+<script>
+const SIZES = [16, 32, 48, 128];
+const SVG_SRC = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="20" fill="#000"/>
+  <text x="64" y="56" font-family="Courier New,Courier,monospace" font-size="44" font-weight="700"
+        text-anchor="middle" dominant-baseline="middle" fill="#fff" letter-spacing="-2">@</text>
+  <text x="64" y="92" font-family="Courier New,Courier,monospace" font-size="22" font-weight="700"
+        text-anchor="middle" dominant-baseline="middle" fill="#fff" letter-spacing="1">ai.md</text>
+  <circle cx="104" cy="18" r="6" fill="#fff"/>
+  <circle cx="104" cy="18" r="3" fill="#000"/>
+</svg>`;
+
+const blob = new Blob([SVG_SRC], { type: 'image/svg+xml' });
+const url  = URL.createObjectURL(blob);
+const img  = new Image();
+
+img.onload = () => {
+  const row = document.getElementById('canvases');
+  SIZES.forEach(size => {
+    const wrap = document.createElement('div');
+    const cv   = document.createElement('canvas');
+    const label = document.createElement('p');
+    cv.width  = size;
+    cv.height = size;
+    cv.title  = `icon${size}.png — right-click to save`;
+    const ctx = cv.getContext('2d');
+    ctx.drawImage(img, 0, 0, size, size);
+    label.textContent = `icon${size}.png`;
+    wrap.appendChild(cv);
+    wrap.appendChild(label);
+    row.appendChild(wrap);
+  });
+  URL.revokeObjectURL(url);
+};
+img.src = url;
+
+function downloadAll() {
+  document.querySelectorAll('canvas').forEach((cv, i) => {
+    const a = document.createElement('a');
+    a.href     = cv.toDataURL('image/png');
+    a.download = `icon${SIZES[i]}.png`;
+    a.click();
+  });
+}
+</script>
+</body>
+</html>

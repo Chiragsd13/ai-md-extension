@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ── Build & Check ─────────────────────────────────────────────────────────────
+  build:
+    name: Build & Check (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node: ['18.x', '20.x']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript type-check
+        run: npm run typecheck
+
+      - name: Build — development (both bundles)
+        run: npm run compile:all
+
+      - name: Build — production (both bundles)
+        run: node esbuild.js --all --production
+
+      - name: Pre-package check (size gates + required files)
+        run: node scripts/check-dist.js
+
+      - name: Package VSIX
+        run: npm run package
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: aimd-node${{ matrix.node }}.vsix
+          path: "*.vsix"
+          retention-days: 14
+
+  # ── Publish (manual trigger on version tags) ──────────────────────────────────
+  publish:
+    name: Publish to Marketplace + npm
+    needs: build
+    runs-on: ubuntu-latest
+
+    # Only publish when a version tag like v1.2.3 is pushed to main
+    if: |
+      github.event_name == 'push' &&
+      github.ref_type == 'tag' &&
+      startsWith(github.ref_name, 'v')
+
+    environment: marketplace   # Requires GitHub Environment with protection rules
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Production build
+        run: node esbuild.js --all --production
+
+      - name: Publish VS Code extension
+        run: npm run publish
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
+      - name: Publish CLI to npm
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
