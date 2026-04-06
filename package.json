@@ -4,10 +4,15 @@
   "description": "Save and restore your AI workflow context across devices and platforms. Never lose context when switching AIs or hitting usage limits.",
   "version": "1.0.0",
   "publisher": "aimd",
+  "homepage": "https://github.com/Chiragsd13/ai-md-extension#readme",
   "repository": {
     "type": "git",
     "url": "https://github.com/Chiragsd13/ai-md-extension"
   },
+  "bugs": {
+    "url": "https://github.com/Chiragsd13/ai-md-extension/issues"
+  },
+  "author": "Chiragsd13",
   "engines": {
     "vscode": "^1.90.0",
     "node": ">=18.0.0"
@@ -18,7 +23,7 @@
     "theme": "dark"
   },
   "categories": ["Other", "Machine Learning", "AI"],
-  "keywords": ["ai", "context", "continuity", "claude", "chatgpt", "copilot", "sync", "workflow", "habits"],
+  "keywords": ["ai", "context", "continuity", "claude", "chatgpt", "gemini", "copilot", "sync", "workflow", "cross-device"],
 
   "main": "./dist/extension.js",
   "bin": {

@@ -6,11 +6,10 @@
 
 **Never lose AI context again.** Save your project state once — resume instantly on any device, in any AI.
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://marketplace.visualstudio.com/items?itemName=aimd.aimd)
-[![VS Code](https://img.shields.io/badge/VS%20Code-1.90%2B-007ACC.svg)](https://code.visualstudio.com/)
-[![CLI](https://img.shields.io/badge/CLI-npm%20install%20--g%20aimd-cb3837.svg)](https://www.npmjs.com/package/aimd)
-[![Chrome](https://img.shields.io/badge/Chrome-MV3%20Extension-4285F4.svg)](https://chrome.google.com/webstore)
-[![Zero Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen.svg)](#architecture)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/Chiragsd13/ai-md-extension/releases)
+[![VS Code](https://img.shields.io/badge/VS%20Code-1.90%2B-007ACC.svg)](https://github.com/Chiragsd13/ai-md-extension)
+[![CI](https://github.com/Chiragsd13/ai-md-extension/actions/workflows/ci.yml/badge.svg)](https://github.com/Chiragsd13/ai-md-extension/actions)
+[![Zero Dependencies](https://img.shields.io/badge/runtime%20deps-0-brightgreen.svg)](#architecture)
 
 </div>
 
@@ -743,8 +742,9 @@ Only needed for Google Drive and OneDrive. GitHub Gist and local folder work wit
 
 ### Google Drive
 1. Go to [console.cloud.google.com](https://console.cloud.google.com) > New Project > Enable Drive API
-2. Credentials > Create OAuth 2.0 Client > Desktop App
-3. Set `AIMD_GOOGLE_CLIENT_ID` + `AIMD_GOOGLE_CLIENT_SECRET` environment variables
+2. Credentials > Create OAuth 2.0 Client > Application type: **Desktop app**
+3. Run `aimd setup` > choose Google Drive > paste Client ID and Secret when prompted
+   - Or set `AIMD_GOOGLE_CLIENT_ID` + `AIMD_GOOGLE_CLIENT_SECRET` environment variables
 4. For the browser extension: replace the placeholder in `browser-extension/manifest.json` under `oauth2.client_id`
 
 ### Microsoft OneDrive
@@ -777,5 +777,7 @@ TypeScript, JavaScript, React, Next.js, Vue, Svelte, Angular, NestJS, Electron, 
 <div align="center">
 
 **AI.md** — your AI's persistent memory across every session, device, and platform.
+
+[GitHub](https://github.com/Chiragsd13/ai-md-extension) | [Releases](https://github.com/Chiragsd13/ai-md-extension/releases) | [Issues](https://github.com/Chiragsd13/ai-md-extension/issues)
 
 </div>
